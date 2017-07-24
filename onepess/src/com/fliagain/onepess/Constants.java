@@ -7,4 +7,6 @@ package com.fliagain.onepess;
  */
 public class Constants {
 
+	public final static double VERSION = 1.0d;
+
 }
