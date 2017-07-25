@@ -15,6 +15,7 @@ app.set('port', (process.env.PORT || 5000));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.get('/', function(req, res) {
+	console.log("Hello world");
 	res.send('Hello world');
 })
 app.get('/webhook', function(req, res) {
