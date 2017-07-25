@@ -2,24 +2,44 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const request = require('request');
+const config = require('config');
 const app = express();
-//작은 따옴표 사이에 본인이 받으신 token을 paste합니다.
-//나중에 보안을 위해서 따로 setting을 하는 방법을 알려드리겠습니다.
-//이 토큰이 포함된 파일을 절대 업로드하거나 github에 적용시키지 마세요.
-
-//var PAGE_ACCESS_TOKEN = 'YOUR TOKEN HERE';
-var PAGE_ACCESS_TOKEN = process.env.FACEBOOK_TOKEN;
-
 
 app.set('port', (process.env.PORT || 5000));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+var players = {},
+initState = {
+		isPlaying: false,
+		num: 0,
+};
+
+const APP_SECRET = process.env.APP_SECRET ? process.env.APP_SECRET :
+	config.get("appSecret");
+const PAGE_ACCESS_TOKEN = process.env.FACEBOOK_TOKEN ? process.env.FACEBOOK_TOKEN :
+	config.get("pageAccessToken");
+const VALIDATION_TOKEN = process.env.VALIDATION_TOKEN ? process.env.VALIDATION_TOKEN :
+	config.get("validationToken");
+
+//const APP_SECRET = process.env.APP_SECRET;
+//const PAGE_ACCESS_TOKEN = process.env.FACEBOOK_TOKEN;
+//const VALIDATION_TOKEN = process.env.VALIDATION_TOKEN;
+
+//if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
+//	console.error("Missing config values");
+//	process.exit(1);
+//}
+
+//var pgp = require("pg-promise")(/*options*/);
+//var db = pgp(process.env.DATABASE_URL);
+
 app.get('/', function(req, res) {
 	console.log("Hello world");
 	res.send('Hello world');
 })
 app.get('/webhook', function(req, res) {
-	if (req.query['hub.verify_token'] === 'VERIFY_TOKEN') {
+	if (req.query['hub.verify_token'] === VALIDATION_TOKEN) {
 		res.send(req.query['hub.challenge']);
 	}
 	res.send('Error, wrong token');
@@ -82,6 +102,27 @@ function sendTextMessage(recipientId, message) {
 		}
 	});
 }
+function receivedAuthentication(event) {
+	var senderID = event.sender.id;
+	var recipientID = event.recipient.id;
+	var timeOfAuth = event.timestamp;
+
+	// The 'ref' field is set in the 'Send to Messenger' plugin, in the 'data-ref'
+	// The developer can set this to an arbitrary value to associate the
+	// authentication callback with the 'Send to Messenger' click event. This is
+	// a way to do account linking when the user clicks the 'Send to Messenger'
+	// plugin.
+	var passThroughParam = event.optin.ref;
+
+	console.log("Received authentication for user %d and page %d with pass " +
+		"through param '%s' at %d", senderID, recipientID, passThroughParam,
+		timeOfAuth);
+
+	// When an authentication is received, we'll send a message back to the sender
+	// to let them know it was successful.
+	sendTextMessage(senderID, "Authentication successful");
+	}
+
 app.listen(app.get('port'), function() {
 	console.log('running on port', app.get('port'));
 })
